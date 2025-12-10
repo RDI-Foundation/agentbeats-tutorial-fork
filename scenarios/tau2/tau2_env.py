@@ -7,27 +7,14 @@ import gymnasium as gym
 from openenv_core.env_server import Action, Environment, Observation, State
 from tau2.gym import TAU_BENCH_ENV_ID, register_gym_agent
 
+from tau2_models import Tau2Action, Tau2Observation, Tau2State
+
 
 # https://github.com/sierra-research/tau2-bench/blob/main/src/tau2/gym/README.md
 # https://github.com/meta-pytorch/OpenEnv/blob/fb169f8c660df722f538160b3ce636de3312a756/src/envs/README.md
 
 
 register_gym_agent()
-
-
-@dataclass
-class Tau2Action(Action):
-    action: str
-
-
-@dataclass
-class Tau2Observation(Observation):
-    observation: str
-
-
-@dataclass
-class Tau2State(State):
-    info: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 class Tau2Environment(Environment):

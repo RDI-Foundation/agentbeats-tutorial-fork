@@ -41,7 +41,8 @@ from tau2.data_model.simulation import RewardInfo
 from tau2.environment.tool import Tool
 from tau2.run import get_tasks
 
-from tau2_env import Tau2Environment, Tau2Action
+from tau2_client import Tau2Env
+from tau2_models import Tau2Action
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tau2_evaluator")
@@ -189,26 +190,18 @@ Task Results:
     ) -> float:
         """Run a single tau-bench task and return the reward."""
 
-        env = Tau2Environment(
-            domain=domain,
-            task_id=task_id,
-            env_args={
-                "max_steps": max_steps,
-                "user_llm": user_llm,
-                "user_llm_args": user_llm_args,
-            },
-        )
+        env = Tau2Env("http://localhost:8000")
 
-        observation = env.reset()
+        observation_sr = env.reset()
 
         # Build the initial task description for the purple agent
-        task_description = self._build_task_prompt(env.state.info, observation.observation)
+        task_description = self._build_task_prompt(env.state.info, observation_sr.observation.observation)
 
         # Start a new conversation with the purple agent
         next_message = task_description
         is_first_message = True
 
-        while not observation.done:
+        while not observation_sr.done:
             logger.debug(f"Sending to purple agent: {next_message[:200]}...")
 
             # Send message to purple agent
@@ -230,19 +223,19 @@ Task Results:
                 action = Tau2Action(action="I encountered an error processing the request.")
 
             # Step the environment with either a JSON string (tool call) or plain text (user response)
-            observation = env.step(action)
-            logger.debug(f"Environment step: reward={observation.reward}, done={observation.done}")
+            observation_sr = env.step(action)
+            logger.debug(f"Environment step: reward={observation_sr.reward}, done={observation_sr.done}")
 
-            if observation.done:
+            if observation_sr.done:
                 break
 
-            next_message = observation.observation
+            next_message = observation_sr.observation.observation
 
         # Extract final reward
         if env.state.info.get("reward_info"):
             reward_info = RewardInfo.model_validate_json(env.state.info["reward_info"])
             return reward_info.reward
-        return 0. if observation.reward is None else float(observation.reward)
+        return 0. if observation_sr.reward is None else float(observation_sr.reward)
 
     def _build_task_prompt(self, info: dict[Any, Any], observation: str) -> str:
         """Build the initial task prompt for the purple agent."""
